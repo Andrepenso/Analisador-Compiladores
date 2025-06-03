@@ -1,0 +1,26 @@
+para rodar de inicio: java -jar jflex-full-1.8.1.jar AnalisadorLexico.flex  
+
+depois: java -jar java-cup-11b.jar -parser AnalisadorSintatico -symbols sym AnalisadorSintatico.cup
+
+depois: java -cp ".;java-cup-11b.jar" AnalisadorLexico
+
+depois: javac -cp ".;java-cup-11b.jar" AnalisadorLexico.java sym.java
+
+
+
+
+  public static void main(String[] args) throws Exception {
+    java.io.FileReader reader = new java.io.FileReader("teste.txt");
+    AnalisadorLexico scanner = new AnalisadorLexico(reader);
+    Symbol token;
+
+    while ((token = scanner.next_token()).sym != sym.EOF) {
+      String nome = sym.terminalNames[token.sym];
+      System.out.printf("Token: %-15s | Valor: %-10s | Linha: %d | Coluna: %d\n",
+        nome,
+        token.value,
+        token.left,
+        token.right
+      );
+    }
+  }

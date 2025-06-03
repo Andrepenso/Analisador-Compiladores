@@ -1,0 +1,115 @@
+import java_cup.runtime.Symbol;
+
+parser code {:
+    public static void main(String[] args) throws Exception {
+        AnalisadorSintatico parser = new AnalisadorSintatico(
+            new AnalisadorLexico(new java.io.FileReader("teste.txt"))
+        );
+        parser.parse();
+        System.out.println("✓ Código válido.");
+    }
+:};
+
+// TERMINAIS
+terminal INT, FLOAT, CHAR;
+terminal IGUAL, PVIRG, VIRG;
+terminal String IDENTIFICADOR;
+terminal Integer NUM_INT;
+terminal Float NUM_REAL;
+terminal String CHAR_LITERAL, STRING_LITERAL;
+terminal ERROR;
+terminal IF, ELSE, SWITCH, CASE, DEFAULT, BREAK;
+terminal IGUAL_IGUAL, DIFERENTE, MENOR, MAIOR, MENOR_IGUAL, MAIOR_IGUAL;
+terminal MAIS, MENOS, MULT, DIV;
+terminal ABRE_PAREN, FECHA_PAREN, ABRE_CHAVE, FECHA_CHAVE;
+terminal DOIS_PONTOS;
+
+// NÃO-TERMINAIS
+non terminal program, decls, decl, tipo, lista_ids, atribuicao, valor;
+non terminal comando_if, comando_switch, condicao, comando, comandos, expr, op_rel, op_arit;
+non terminal casos, caso, default_opt, constante, mult_casos;
+
+// PRECEDÊNCIA
+precedence left MAIS, MENOS;
+precedence left MULT, DIV;
+
+start with program;
+
+// ---------- ETAPA 1: Declarações de variáveis ----------
+
+program       ::= decls;
+
+decls         ::= decls decl
+               | decls comando_if
+               | decls comando_switch
+               | decls comando
+               | decl;
+
+decl          ::= tipo lista_ids PVIRG;
+
+tipo          ::= INT
+               | FLOAT
+               | CHAR;
+
+// Permite: x, y, z
+// Ou: x = 5, y = 2, z
+lista_ids     ::= lista_ids VIRG IDENTIFICADOR
+               | lista_ids VIRG IDENTIFICADOR IGUAL valor
+               | IDENTIFICADOR
+               | IDENTIFICADOR IGUAL valor;
+
+valor         ::= NUM_INT
+               | NUM_REAL
+               | CHAR_LITERAL
+               | STRING_LITERAL;
+
+// ---------- ETAPA 2: Comandos de Controle ----------
+
+comando_if     ::= IF ABRE_PAREN condicao FECHA_PAREN ABRE_CHAVE comandos FECHA_CHAVE
+                   ELSE ABRE_CHAVE comandos FECHA_CHAVE
+                 | IF ABRE_PAREN condicao FECHA_PAREN ABRE_CHAVE comandos FECHA_CHAVE;
+
+comando_switch ::= SWITCH ABRE_PAREN IDENTIFICADOR FECHA_PAREN ABRE_CHAVE casos default_opt FECHA_CHAVE;
+
+casos          ::= casos caso
+                | caso;
+
+caso           ::= mult_casos DOIS_PONTOS ABRE_CHAVE comandos BREAK PVIRG FECHA_CHAVE;
+
+mult_casos     ::= CASE constante
+                | mult_casos CASE constante;
+
+default_opt    ::= /* vazio */
+                | DEFAULT DOIS_PONTOS ABRE_CHAVE comandos FECHA_CHAVE;
+
+constante      ::= NUM_INT
+                | NUM_REAL
+                | CHAR_LITERAL
+                | STRING_LITERAL
+                | IDENTIFICADOR;
+
+condicao       ::= IDENTIFICADOR op_rel valor;
+
+op_rel         ::= IGUAL_IGUAL
+                | DIFERENTE
+                | MENOR
+                | MENOR_IGUAL
+                | MAIOR
+                | MAIOR_IGUAL;
+
+// ---------- Comandos e Expressões ----------
+
+comandos       ::= comandos comando
+                | comando;
+
+comando        ::= IDENTIFICADOR IGUAL expr PVIRG;
+
+expr           ::= expr op_arit expr
+                | NUM_INT
+                | NUM_REAL
+                | IDENTIFICADOR;
+
+op_arit        ::= MAIS
+                | MENOS
+                | MULT
+                | DIV;
