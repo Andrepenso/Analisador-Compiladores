@@ -4,7 +4,7 @@
 //----------------------------------------------------
 
 /** CUP generated class containing symbol constants. */
-public class sym {
+public class Simbolos {
   /* terminals */
   public static final int STRING_LITERAL = 12;
   public static final int MULT = 28;

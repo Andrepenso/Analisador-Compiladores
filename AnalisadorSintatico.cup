@@ -2,15 +2,17 @@ import java_cup.runtime.Symbol;
 
 parser code {:
     public static void main(String[] args) throws Exception {
+        System.out.println("Iniciando análise sintática...");
         AnalisadorSintatico parser = new AnalisadorSintatico(
             new AnalisadorLexico(new java.io.FileReader("teste.txt"))
         );
         parser.parse();
-        System.out.println("✓ Código válido.");
+        System.out.println("Código válido.");
     }
 :};
 
-// TERMINAIS
+
+// ------------------ TERMINAIS ------------------
 terminal INT, FLOAT, CHAR;
 terminal IGUAL, PVIRG, VIRG;
 terminal String IDENTIFICADOR;
@@ -23,93 +25,134 @@ terminal IGUAL_IGUAL, DIFERENTE, MENOR, MAIOR, MENOR_IGUAL, MAIOR_IGUAL;
 terminal MAIS, MENOS, MULT, DIV;
 terminal ABRE_PAREN, FECHA_PAREN, ABRE_CHAVE, FECHA_CHAVE;
 terminal DOIS_PONTOS;
+terminal WHILE, FOR;
 
-// NÃO-TERMINAIS
-non terminal program, decls, decl, tipo, lista_ids, atribuicao, valor;
-non terminal comando_if, comando_switch, condicao, comando, comandos, expr, op_rel, op_arit;
-non terminal casos, caso, default_opt, constante, mult_casos;
+// ---------------- NÃO-TERMINAIS ----------------
+non terminal program, lista_blocos, bloco;
+non terminal decl, tipo, lista_ids, valor;
+non terminal comando, comandos, atribuicao, incremento;
+non terminal comando_if, comando_switch, comando_while, comando_for;
+non terminal casos, caso, default_opt, constante, mult_casos, lista_casos_opt, lista_casos;
+non terminal condicao, op_rel, expr, op_arit, expressao, comandos_opt;
 
-// PRECEDÊNCIA
+// ---------------- PRECEDÊNCIA ----------------
 precedence left MAIS, MENOS;
 precedence left MULT, DIV;
 
+// ---------------- INÍCIO ----------------
 start with program;
 
-// ---------- ETAPA 1: Declarações de variáveis ----------
+// ========== INÍCIO ==========
+program ::= lista_blocos;
 
-program       ::= decls;
+lista_blocos ::= lista_blocos bloco
+               | bloco;
 
-decls         ::= decls decl
-               | decls comando_if
-               | decls comando_switch
-               | decls comando
-               | decl;
+bloco ::= decl
+        | ABRE_CHAVE comandos FECHA_CHAVE
+        | comando;
 
-decl          ::= tipo lista_ids PVIRG;
 
-tipo          ::= INT
-               | FLOAT
-               | CHAR;
 
-// Permite: x, y, z
-// Ou: x = 5, y = 2, z
-lista_ids     ::= lista_ids VIRG IDENTIFICADOR
-               | lista_ids VIRG IDENTIFICADOR IGUAL valor
-               | IDENTIFICADOR
-               | IDENTIFICADOR IGUAL valor;
 
-valor         ::= NUM_INT
-               | NUM_REAL
-               | CHAR_LITERAL
-               | STRING_LITERAL;
 
-// ---------- ETAPA 2: Comandos de Controle ----------
+// ========== DECLARAÇÕES ==========
+decl ::= tipo lista_ids PVIRG;
 
-comando_if     ::= IF ABRE_PAREN condicao FECHA_PAREN ABRE_CHAVE comandos FECHA_CHAVE
-                   ELSE ABRE_CHAVE comandos FECHA_CHAVE
-                 | IF ABRE_PAREN condicao FECHA_PAREN ABRE_CHAVE comandos FECHA_CHAVE;
+tipo ::= INT
+       | FLOAT
+       | CHAR;
 
-comando_switch ::= SWITCH ABRE_PAREN IDENTIFICADOR FECHA_PAREN ABRE_CHAVE casos default_opt FECHA_CHAVE;
+lista_ids ::= lista_ids VIRG IDENTIFICADOR
+            | lista_ids VIRG IDENTIFICADOR IGUAL valor
+            | IDENTIFICADOR
+            | IDENTIFICADOR IGUAL valor;
 
-casos          ::= casos caso
-                | caso;
+valor ::= NUM_INT
+        | NUM_REAL
+        | CHAR_LITERAL
+        | STRING_LITERAL
+        | IDENTIFICADOR;
 
-caso           ::= mult_casos DOIS_PONTOS ABRE_CHAVE comandos BREAK PVIRG FECHA_CHAVE;
+// ========== COMANDOS ==========
+comando ::= atribuicao PVIRG
+          | comando_if
+          | comando_switch
+          | comando_while
+          | comando_for
+          | BREAK PVIRG;
 
-mult_casos     ::= CASE constante
-                | mult_casos CASE constante;
+comandos ::= comandos comando
+           | comando;
 
-default_opt    ::= /* vazio */
-                | DEFAULT DOIS_PONTOS ABRE_CHAVE comandos FECHA_CHAVE;
+comandos_opt ::= comandos
+               | /* vazio */;
 
-constante      ::= NUM_INT
-                | NUM_REAL
-                | CHAR_LITERAL
-                | STRING_LITERAL
-                | IDENTIFICADOR;
+// ========== ATRIBUIÇÃO ==========
+atribuicao ::= IDENTIFICADOR IGUAL expr;
 
-condicao       ::= IDENTIFICADOR op_rel valor;
+// ========== EXPRESSÕES ==========
+expr ::= expr op_arit expr
+       | ABRE_PAREN expr FECHA_PAREN
+       | NUM_INT
+       | NUM_REAL
+       | CHAR_LITERAL
+       | STRING_LITERAL
+       | IDENTIFICADOR;
 
-op_rel         ::= IGUAL_IGUAL
-                | DIFERENTE
-                | MENOR
-                | MENOR_IGUAL
-                | MAIOR
-                | MAIOR_IGUAL;
+op_arit ::= MAIS
+          | MENOS
+          | MULT
+          | DIV;
 
-// ---------- Comandos e Expressões ----------
+expressao ::= expr;
 
-comandos       ::= comandos comando
-                | comando;
+// ========== CONDICIONAIS ==========
+comando_if ::= IF ABRE_PAREN condicao FECHA_PAREN ABRE_CHAVE comandos FECHA_CHAVE
+               {: System.out.println("Reconhecido: IF"); :}
+             | IF ABRE_PAREN condicao FECHA_PAREN ABRE_CHAVE comandos FECHA_CHAVE
+               ELSE ABRE_CHAVE comandos FECHA_CHAVE
+               {: System.out.println("Reconhecido: IF-ELSE"); :};
 
-comando        ::= IDENTIFICADOR IGUAL expr PVIRG;
+condicao ::= IDENTIFICADOR op_rel valor;
 
-expr           ::= expr op_arit expr
-                | NUM_INT
-                | NUM_REAL
-                | IDENTIFICADOR;
+op_rel ::= IGUAL_IGUAL
+         | DIFERENTE
+         | MENOR
+         | MENOR_IGUAL
+         | MAIOR
+         | MAIOR_IGUAL;
 
-op_arit        ::= MAIS
-                | MENOS
-                | MULT
-                | DIV;
+// ========== SWITCH ==========
+comando_switch ::= 
+    SWITCH ABRE_PAREN IDENTIFICADOR FECHA_PAREN 
+    ABRE_CHAVE lista_casos_opt default_opt FECHA_CHAVE
+    {: System.out.println("Reconhecido: SWITCH"); :};
+
+lista_casos_opt ::= lista_casos
+                  | /* vazio */;
+
+lista_casos ::= lista_casos caso
+              | caso;
+
+caso ::= CASE constante DOIS_PONTOS ABRE_CHAVE comandos_opt FECHA_CHAVE
+         {: System.out.println("Reconhecido: CASE"); :};
+
+
+default_opt ::= DEFAULT DOIS_PONTOS ABRE_CHAVE comandos_opt FECHA_CHAVE
+              {: System.out.println("Reconhecido: DEFAULT"); :}
+              | /* vazio */;
+
+
+constante ::= NUM_INT
+            | CHAR_LITERAL
+            | STRING_LITERAL;
+
+// ========== REPETIÇÃO ==========
+comando_while ::= WHILE ABRE_PAREN condicao FECHA_PAREN ABRE_CHAVE comandos FECHA_CHAVE
+    {: System.out.println("Reconhecido: WHILE"); :};
+
+incremento ::= IDENTIFICADOR IGUAL expr;
+
+comando_for ::= FOR ABRE_PAREN atribuicao PVIRG condicao PVIRG incremento FECHA_PAREN ABRE_CHAVE comandos FECHA_CHAVE
+    {: System.out.println("Reconhecido: FOR"); :};

@@ -1,6 +1,8 @@
-int x = 5, y;
-if (x > 2) {
-    y = x + 1;
-} else {
-    y = x - 1;
+int i;
+int contador = 0;
+
+for (i = 0; i < 5; i = i + 1) {
+    while (contador < 3) {
+        contador = contador + 1;
+    }
 }
